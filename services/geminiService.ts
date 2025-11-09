@@ -1,15 +1,5 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 import type { GenerationOptions } from '../types';
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 export async function generate3DVisualization(
   options: GenerationOptions,
@@ -64,16 +54,42 @@ export async function generate3DVisualization(
         },
       });
 
-      if (response.candidates && response.candidates[0].content.parts[0].inlineData) {
-        const base64ImageData = response.candidates[0].content.parts[0].inlineData.data;
+      // Check for prompt feedback which indicates a potential issue (e.g., safety blocking)
+      if (response.promptFeedback?.blockReason) {
+        console.error('Geração bloqueada:', response.promptFeedback);
+        let userMessage = `A geração foi bloqueada. Motivo: ${response.promptFeedback.blockReason}.`;
+        if (response.promptFeedback.blockReason === 'SAFETY') {
+          userMessage = 'A geração foi bloqueada por motivos de segurança. Por favor, tente usar uma imagem ou descrição diferente que esteja de acordo com as políticas de segurança.';
+        }
+        throw new Error(userMessage);
+      }
+
+      const imagePart = response.candidates?.[0]?.content?.parts?.find(
+        (part) => part.inlineData
+      );
+
+      if (imagePart?.inlineData) {
+        const base64ImageData = imagePart.inlineData.data;
         generatedImages.push(`data:${options.imageMimeType};base64,${base64ImageData}`);
       } else {
-        throw new Error('A API não retornou uma imagem válida para o frame ' + i);
+        // This case handles when the API returns a response but without an image.
+        console.error('A API não retornou uma imagem válida para o frame ' + (i + 1), JSON.stringify(response, null, 2));
+        const finishReason = response.candidates?.[0]?.finishReason;
+        let errorMessage = `A API não retornou uma imagem válida para o frame ${i + 1}.`;
+        if (finishReason) {
+          errorMessage += ` Motivo: ${finishReason}.`;
+        }
+        errorMessage += ' Tente ajustar as configurações ou a imagem de entrada.';
+        throw new Error(errorMessage);
       }
       
       onProgress(Math.round(((i + 1) / totalFrames) * 100));
     } catch (error) {
-      console.error(`Erro ao gerar frame ${i}:`, error);
+      console.error(`Erro ao gerar frame ${i + 1}:`, error);
+      // Re-throw the specific error message we created, or create a more generic one for other errors.
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error(`Falha na geração no frame ${i + 1}. Verifique o console para mais detalhes.`);
     }
   }

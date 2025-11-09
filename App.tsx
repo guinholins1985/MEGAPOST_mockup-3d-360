@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import type { FormData, OutputType } from './types';
 import { CATEGORIES, MOCKUP_STYLES, OUTPUT_TYPES, ROTATION_ANGLES, LIGHTING_STYLES, RESOLUTIONS } from './constants';
@@ -110,8 +109,8 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600">
-            Gerador de Mockup 3D com IA
+          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
+            Gerador de Mockups 3D com IA
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
             Transforme uma imagem 2D do seu produto em uma visualização 3D ou 360° imersiva e profissional.
